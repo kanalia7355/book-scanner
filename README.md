@@ -32,7 +32,7 @@
 
 ```bash
 # リポジトリをクローン
-git clone https://github.com/your-username/book-scanner.git
+git clone https://github.com/kanalia7355/book-scanner.git
 cd book-scanner
 
 # 依存関係をインストール
