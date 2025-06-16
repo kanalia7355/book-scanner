@@ -52,8 +52,19 @@ export const BookProvider = ({ children }) => {
     return books.filter(book => 
       book.title?.toLowerCase().includes(lowercaseQuery) ||
       book.author?.toLowerCase().includes(lowercaseQuery) ||
-      book.isbn?.toLowerCase().includes(lowercaseQuery)
+      book.isbn?.toLowerCase().includes(lowercaseQuery) ||
+      book.location?.toLowerCase().includes(lowercaseQuery)
     );
+  };
+
+  const getLocations = () => {
+    const locationSet = new Set();
+    books.forEach(book => {
+      if (book.location && book.location.trim()) {
+        locationSet.add(book.location.trim());
+      }
+    });
+    return Array.from(locationSet).sort();
   };
 
   const value = {
@@ -63,6 +74,7 @@ export const BookProvider = ({ children }) => {
     deleteBook,
     getBook,
     searchBooks,
+    getLocations,
   };
 
   return (

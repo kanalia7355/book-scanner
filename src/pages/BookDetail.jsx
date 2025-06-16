@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useBooks } from '../contexts/BookContext';
-import { ArrowLeft, Edit, Trash2, Book, User, Building, Calendar, Hash, FileText, Tag } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, Book, User, Building, Calendar, Hash, FileText, Tag, MapPin } from 'lucide-react';
 
 const BookDetail = () => {
   const { id } = useParams();
@@ -87,6 +87,22 @@ const BookDetail = () => {
                 <User size={20} style={{ color: '#666' }} />
                 <span style={{ fontWeight: '500' }}>著者:</span>
                 <span>{book.author}</span>
+              </div>
+            )}
+
+            {book.location && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <MapPin size={20} style={{ color: '#007bff' }} />
+                <span style={{ fontWeight: '500' }}>保管場所:</span>
+                <span style={{ 
+                  backgroundColor: '#e3f2fd', 
+                  color: '#1976d2', 
+                  padding: '2px 8px', 
+                  borderRadius: '12px', 
+                  fontSize: '0.875rem' 
+                }}>
+                  {book.location}
+                </span>
               </div>
             )}
 

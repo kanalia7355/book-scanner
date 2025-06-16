@@ -2,12 +2,13 @@ import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useBooks } from '../contexts/BookContext';
 import DataManagement from '../components/DataManagement';
-import { Search, Book, Calendar, User, Filter } from 'lucide-react';
+import { Search, Book, Calendar, User, Filter, MapPin } from 'lucide-react';
 
 const BookList = () => {
-  const { books, searchBooks } = useBooks();
+  const { books, searchBooks, getLocations } = useBooks();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedLocation, setSelectedLocation] = useState('');
 
   // 全カテゴリーを取得
   const categories = useMemo(() => {
@@ -23,6 +24,11 @@ const BookList = () => {
     });
     return Array.from(categorySet).sort();
   }, [books]);
+
+  // 全場所を取得
+  const locations = useMemo(() => {
+    return getLocations();
+  }, [getLocations]);
 
   // フィルタリングされた書籍
   const displayedBooks = useMemo(() => {
@@ -40,21 +46,28 @@ const BookList = () => {
       );
     }
 
+    // 場所によるフィルタ
+    if (selectedLocation) {
+      filtered = filtered.filter(book => 
+        book.location && book.location === selectedLocation
+      );
+    }
+
     return filtered;
-  }, [books, searchQuery, selectedCategory, searchBooks]);
+  }, [books, searchQuery, selectedCategory, selectedLocation, searchBooks]);
 
   return (
     <div className="container">
       <div className="main-content">
         <h2 className="page-title">書籍一覧</h2>
         
-        <div style={{ display: 'grid', gap: '1rem', gridTemplateColumns: '1fr auto', alignItems: 'end' }}>
+        <div style={{ display: 'grid', gap: '1rem', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', alignItems: 'end' }}>
           <div className="form-group" style={{ marginBottom: 0 }}>
             <div style={{ position: 'relative' }}>
               <Search style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#999' }} size={20} />
               <input
                 type="text"
-                placeholder="タイトル、著者、ISBNで検索..."
+                placeholder="タイトル、著者、ISBN、場所で検索..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 style={{ paddingLeft: '40px' }}
@@ -63,7 +76,7 @@ const BookList = () => {
           </div>
 
           <div className="form-group" style={{ marginBottom: 0 }}>
-            <div style={{ position: 'relative', minWidth: '200px' }}>
+            <div style={{ position: 'relative' }}>
               <Filter style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#999' }} size={20} />
               <select
                 value={selectedCategory}
@@ -86,17 +99,44 @@ const BookList = () => {
               </select>
             </div>
           </div>
+
+          <div className="form-group" style={{ marginBottom: 0 }}>
+            <div style={{ position: 'relative' }}>
+              <MapPin style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#999' }} size={20} />
+              <select
+                value={selectedLocation}
+                onChange={(e) => setSelectedLocation(e.target.value)}
+                style={{ 
+                  paddingLeft: '40px',
+                  background: 'white',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  padding: '10px 10px 10px 40px',
+                  fontSize: '16px',
+                  width: '100%',
+                  cursor: 'pointer'
+                }}
+              >
+                <option value="">全ての場所</option>
+                {locations.map(location => (
+                  <option key={location} value={location}>{location}</option>
+                ))}
+              </select>
+            </div>
+          </div>
         </div>
 
-        {(searchQuery || selectedCategory) && (
+        {(searchQuery || selectedCategory || selectedLocation) && (
           <div style={{ marginBottom: '1rem', padding: '0.5rem 1rem', backgroundColor: '#e3f2fd', borderRadius: '4px', fontSize: '0.875rem' }}>
             {displayedBooks.length}件の書籍が見つかりました
             {selectedCategory && ` (カテゴリー: ${selectedCategory})`}
-            {(searchQuery || selectedCategory) && (
+            {selectedLocation && ` (場所: ${selectedLocation})`}
+            {(searchQuery || selectedCategory || selectedLocation) && (
               <button
                 onClick={() => {
                   setSearchQuery('');
                   setSelectedCategory('');
+                  setSelectedLocation('');
                 }}
                 style={{
                   marginLeft: '1rem',
@@ -166,6 +206,20 @@ const BookList = () => {
                       {book.isbn && (
                         <p style={{ color: '#999', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
                           ISBN: {book.isbn}
+                        </p>
+                      )}
+                      {book.location && (
+                        <p style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                          <MapPin size={14} style={{ color: '#007bff' }} />
+                          <span style={{ 
+                            backgroundColor: '#e3f2fd', 
+                            color: '#1976d2', 
+                            padding: '1px 6px', 
+                            borderRadius: '8px', 
+                            fontSize: '0.75rem' 
+                          }}>
+                            {book.location}
+                          </span>
                         </p>
                       )}
                       <p style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#999', fontSize: '0.875rem' }}>

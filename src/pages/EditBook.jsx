@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useBooks } from '../contexts/BookContext';
 import ImageUpload from '../components/ImageUpload';
+import LocationInput from '../components/LocationInput';
 import { Save, X, ArrowLeft } from 'lucide-react';
 
 const EditBook = () => {
@@ -21,6 +22,7 @@ const EditBook = () => {
     description: '',
     category: '',
     imageUrl: '',
+    location: '',
   });
 
   const [errors, setErrors] = useState({});
@@ -37,6 +39,7 @@ const EditBook = () => {
         description: book.description || '',
         category: book.category || '',
         imageUrl: book.imageUrl || '',
+        location: book.location || '',
       });
     }
   }, [book]);
@@ -79,6 +82,10 @@ const EditBook = () => {
     
     if (!formData.title.trim()) {
       newErrors.title = 'タイトルは必須です';
+    }
+    
+    if (!formData.location.trim()) {
+      newErrors.location = '保管場所は必須です';
     }
     
     if (formData.isbn && !formData.isbn.match(/^[\d-]{10,13}$/)) {
@@ -128,6 +135,22 @@ const EditBook = () => {
     }));
   };
 
+  const handleLocationChange = (location) => {
+    setFormData(prev => ({
+      ...prev,
+      location
+    }));
+    
+    // エラーをクリア
+    if (errors.location) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors.location;
+        return newErrors;
+      });
+    }
+  };
+
   return (
     <div className="container">
       <div className="main-content">
@@ -154,6 +177,13 @@ const EditBook = () => {
             />
             {errors.title && <div className="error-message">{errors.title}</div>}
           </div>
+
+          <LocationInput
+            value={formData.location}
+            onChange={handleLocationChange}
+            required={true}
+          />
+          {errors.location && <div className="error-message">{errors.location}</div>}
 
           <div className="form-group">
             <label className="form-label">著者</label>

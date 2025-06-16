@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import { useBooks } from '../contexts/BookContext';
 import { fetchBookInfo } from '../utils/bookAPI';
+import LocationModal from '../components/LocationModal';
 import { Scan, X, Loader } from 'lucide-react';
 
 const Scanner = () => {
@@ -10,6 +11,8 @@ const Scanner = () => {
   const [scannedCode, setScannedCode] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showLocationModal, setShowLocationModal] = useState(false);
+  const [pendingBookInfo, setPendingBookInfo] = useState(null);
   const { addBook } = useBooks();
   const navigate = useNavigate();
 
@@ -65,9 +68,9 @@ const Scanner = () => {
       const bookInfo = await fetchBookInfo(isbn);
 
       if (bookInfo) {
-        // API取得成功
-        const newBook = addBook(bookInfo);
-        navigate(`/book/${newBook.id}`);
+        // API取得成功 - 場所入力モーダルを表示
+        setPendingBookInfo(bookInfo);
+        setShowLocationModal(true);
       } else {
         // API取得失敗 - 手動入力画面へ
         setError('書籍情報が見つかりませんでした。手動で入力してください。');
@@ -91,6 +94,20 @@ const Scanner = () => {
 
   const stopScanning = () => {
     setIsScanning(false);
+  };
+
+  const handleLocationSave = (bookDataWithLocation) => {
+    const newBook = addBook(bookDataWithLocation);
+    setShowLocationModal(false);
+    setPendingBookInfo(null);
+    navigate(`/book/${newBook.id}`);
+  };
+
+  const handleLocationCancel = () => {
+    setShowLocationModal(false);
+    setPendingBookInfo(null);
+    // スキャンに戻る
+    setIsLoading(false);
   };
 
   return (
@@ -153,6 +170,13 @@ const Scanner = () => {
           </ul>
         </div>
       </div>
+
+      <LocationModal
+        isOpen={showLocationModal}
+        onClose={handleLocationCancel}
+        onSave={handleLocationSave}
+        bookInfo={pendingBookInfo}
+      />
     </div>
   );
 };
