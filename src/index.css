@@ -207,17 +207,32 @@ input:focus, textarea:focus {
 
 @media (max-width: 768px) {
   .header-content {
-    flex-direction: column;
+    flex-wrap: wrap;
     gap: 1rem;
   }
   
   .nav-links {
     flex-wrap: wrap;
-    justify-content: center;
     gap: 1rem;
   }
   
   .page-title {
     font-size: 1.5rem;
+  }
+
+  /* ユーザー情報のレスポンシブ対応 */
+  .header-content > div:last-child {
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  /* ユーザー名を小画面では非表示 */
+  .header-content span[style*="display: none"] {
+    display: none !important;
+  }
+
+  /* ログアウトボタンのテキストを小画面では非表示 */
+  .header-content button span[style*="display: none"] {
+    display: none !important;
   }
 }

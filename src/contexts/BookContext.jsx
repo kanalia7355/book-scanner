@@ -12,13 +12,22 @@ export const useBooks = () => {
 };
 
 export const BookProvider = ({ children }) => {
-  const [books, setBooks] = useState(() => {
-    const savedBooks = localStorage.getItem('books');
-    return savedBooks ? JSON.parse(savedBooks) : [];
-  });
+  const [books, setBooks] = useState([]);
 
+  // 研究室共有データとしてLocalStorageに保存
+  const STORAGE_KEY = 'lab_books_shared';
+
+  // 初回読み込み時にデータを取得
   useEffect(() => {
-    localStorage.setItem('books', JSON.stringify(books));
+    const savedBooks = localStorage.getItem(STORAGE_KEY);
+    setBooks(savedBooks ? JSON.parse(savedBooks) : []);
+  }, []);
+
+  // データ変更時にLocalStorageに保存
+  useEffect(() => {
+    if (books.length >= 0) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(books));
+    }
   }, [books]);
 
   const addBook = (bookData) => {
@@ -57,6 +66,18 @@ export const BookProvider = ({ children }) => {
     );
   };
 
+  const sortBooksByLocation = (booksArray = books) => {
+    return [...booksArray].sort((a, b) => {
+      const locationA = a.location?.toLowerCase() || 'zzz';
+      const locationB = b.location?.toLowerCase() || 'zzz';
+      return locationA.localeCompare(locationB);
+    });
+  };
+
+  const getBooksByLocation = (location) => {
+    return books.filter(book => book.location === location);
+  };
+
   const getLocations = () => {
     const locationSet = new Set();
     books.forEach(book => {
@@ -75,6 +96,8 @@ export const BookProvider = ({ children }) => {
     getBook,
     searchBooks,
     getLocations,
+    sortBooksByLocation,
+    getBooksByLocation,
   };
 
   return (

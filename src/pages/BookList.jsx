@@ -5,10 +5,11 @@ import DataManagement from '../components/DataManagement';
 import { Search, Book, Calendar, User, Filter, MapPin } from 'lucide-react';
 
 const BookList = () => {
-  const { books, searchBooks, getLocations } = useBooks();
+  const { books, searchBooks, getLocations, sortBooksByLocation } = useBooks();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedLocation, setSelectedLocation] = useState('');
+  const [sortBy, setSortBy] = useState('addedAt');
 
   // 全カテゴリーを取得
   const categories = useMemo(() => {
@@ -30,7 +31,7 @@ const BookList = () => {
     return getLocations();
   }, [getLocations]);
 
-  // フィルタリングされた書籍
+  // フィルタリングとソートされた書籍
   const displayedBooks = useMemo(() => {
     let filtered = books;
 
@@ -53,15 +54,26 @@ const BookList = () => {
       );
     }
 
-    return filtered;
-  }, [books, searchQuery, selectedCategory, selectedLocation, searchBooks]);
+    // ソート
+    switch (sortBy) {
+      case 'location':
+        return sortBooksByLocation(filtered);
+      case 'title':
+        return [...filtered].sort((a, b) => a.title?.localeCompare(b.title) || 0);
+      case 'author':
+        return [...filtered].sort((a, b) => a.author?.localeCompare(b.author) || 0);
+      case 'addedAt':
+      default:
+        return [...filtered].sort((a, b) => new Date(b.addedAt) - new Date(a.addedAt));
+    }
+  }, [books, searchQuery, selectedCategory, selectedLocation, sortBy, searchBooks, sortBooksByLocation]);
 
   return (
     <div className="container">
       <div className="main-content">
         <h2 className="page-title">書籍一覧</h2>
         
-        <div style={{ display: 'grid', gap: '1rem', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', alignItems: 'end' }}>
+        <div style={{ display: 'grid', gap: '1rem', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', alignItems: 'end' }}>
           <div className="form-group" style={{ marginBottom: 0 }}>
             <div style={{ position: 'relative' }}>
               <Search style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#999' }} size={20} />
@@ -124,6 +136,27 @@ const BookList = () => {
               </select>
             </div>
           </div>
+
+          <div className="form-group" style={{ marginBottom: 0 }}>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              style={{ 
+                background: 'white',
+                border: '1px solid #ddd',
+                borderRadius: '4px',
+                padding: '10px',
+                fontSize: '16px',
+                width: '100%',
+                cursor: 'pointer'
+              }}
+            >
+              <option value="addedAt">追加日順</option>
+              <option value="location">場所順</option>
+              <option value="title">タイトル順</option>
+              <option value="author">著者順</option>
+            </select>
+          </div>
         </div>
 
         {(searchQuery || selectedCategory || selectedLocation) && (
@@ -131,12 +164,18 @@ const BookList = () => {
             {displayedBooks.length}件の書籍が見つかりました
             {selectedCategory && ` (カテゴリー: ${selectedCategory})`}
             {selectedLocation && ` (場所: ${selectedLocation})`}
+            {sortBy !== 'addedAt' && ` (${{
+              location: '場所順',
+              title: 'タイトル順', 
+              author: '著者順'
+            }[sortBy]}でソート)`}
             {(searchQuery || selectedCategory || selectedLocation) && (
               <button
                 onClick={() => {
                   setSearchQuery('');
                   setSelectedCategory('');
                   setSelectedLocation('');
+                  setSortBy('addedAt');
                 }}
                 style={{
                   marginLeft: '1rem',
