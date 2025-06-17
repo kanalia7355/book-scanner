@@ -19,11 +19,22 @@ export const BookProvider = ({ children }) => {
   const [error, setError] = useState(null);
   const [connected, setConnected] = useState(false);
 
-  // Firebase Realtime Database参照
-  const booksRef = ref(database, 'books');
-
   // Firebase からリアルタイムでデータを取得
   useEffect(() => {
+    // Firebaseが利用できない場合はローカルストレージのみを使用
+    if (!database) {
+      console.warn('Firebase database not available, using localStorage only');
+      const savedBooks = localStorage.getItem('lab_books_shared');
+      if (savedBooks) {
+        setBooks(JSON.parse(savedBooks));
+      }
+      setLoading(false);
+      setConnected(false);
+      setError('Firebase設定が無効です。ローカルストレージを使用します。');
+      return;
+    }
+
+    const booksRef = ref(database, 'books');
     console.log('Setting up Firebase listener...');
     console.log('Database reference:', booksRef.toString());
     
@@ -70,9 +81,12 @@ export const BookProvider = ({ children }) => {
 
     return () => {
       console.log('Cleaning up Firebase listener...');
-      off(booksRef);
+      if (database && unsubscribe) {
+        const booksRef = ref(database, 'books');
+        off(booksRef);
+      }
     };
-  }, []);
+  }, [database]);
 
   // ローカルストレージにバックアップ保存
   useEffect(() => {
@@ -82,15 +96,26 @@ export const BookProvider = ({ children }) => {
   }, [books, loading]);
 
   const addBook = async (bookData) => {
-    try {
-      const newBook = {
-        ...bookData,
-        addedAt: new Date().toISOString(),
-        // 画像URLが外部URLの場合はそのまま、ローカル画像はBase64として保存
-        imageUrl: bookData.imageUrl || null,
+    const newBook = {
+      ...bookData,
+      addedAt: new Date().toISOString(),
+      // 画像URLが外部URLの場合はそのまま、ローカル画像はBase64として保存
+      imageUrl: bookData.imageUrl || null,
+    };
+
+    // Firebaseが利用できない場合はローカルのみで追加
+    if (!database) {
+      const localBook = {
+        id: uuidv4(),
+        ...newBook,
       };
-      
+      setBooks(prev => [...prev, localBook]);
+      return localBook;
+    }
+
+    try {
       // Firebase に保存（IDは自動生成）
+      const booksRef = ref(database, 'books');
       const newBookRef = push(booksRef);
       console.log('Adding book to Firebase with ID:', newBookRef.key);
       await set(newBookRef, newBook);
@@ -106,46 +131,58 @@ export const BookProvider = ({ children }) => {
       setError(`書籍追加エラー: ${err.message}`);
       
       // フォールバック: ローカルのみで追加
-      const newBook = {
+      const localBook = {
         id: uuidv4(),
-        ...bookData,
-        addedAt: new Date().toISOString(),
-        imageUrl: bookData.imageUrl || null,
+        ...newBook,
       };
-      setBooks(prev => [...prev, newBook]);
-      return newBook;
+      setBooks(prev => [...prev, localBook]);
+      return localBook;
     }
   };
 
   const updateBook = async (id, bookData) => {
+    const updateData = {
+      ...bookData,
+      updatedAt: new Date().toISOString()
+    };
+
+    // Firebaseが利用できない場合はローカルのみで更新
+    if (!database) {
+      setBooks(prev => prev.map(book => 
+        book.id === id ? { ...book, ...updateData } : book
+      ));
+      return;
+    }
+
     try {
-      const updateData = {
-        ...bookData,
-        updatedAt: new Date().toISOString()
-      };
-      
       // Firebase で更新
       const bookRef = ref(database, `books/${id}`);
       await update(bookRef, updateData);
     } catch (err) {
       console.error('Error updating book in Firebase:', err);
-      setError(err.message);
+      setError(`書籍更新エラー: ${err.message}`);
       
       // フォールバック: ローカルのみで更新
       setBooks(prev => prev.map(book => 
-        book.id === id ? { ...book, ...bookData, updatedAt: new Date().toISOString() } : book
+        book.id === id ? { ...book, ...updateData } : book
       ));
     }
   };
 
   const deleteBook = async (id) => {
+    // Firebaseが利用できない場合はローカルのみで削除
+    if (!database) {
+      setBooks(prev => prev.filter(book => book.id !== id));
+      return;
+    }
+
     try {
       // Firebase から削除
       const bookRef = ref(database, `books/${id}`);
       await remove(bookRef);
     } catch (err) {
       console.error('Error deleting book from Firebase:', err);
-      setError(err.message);
+      setError(`書籍削除エラー: ${err.message}`);
       
       // フォールバック: ローカルのみで削除
       setBooks(prev => prev.filter(book => book.id !== id));

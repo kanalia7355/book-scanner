@@ -2,8 +2,22 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { getDatabase } from 'firebase/database';
 
+// Firebase設定の検証
+const hasValidConfig = () => {
+  const requiredVars = [
+    'VITE_FIREBASE_API_KEY',
+    'VITE_FIREBASE_AUTH_DOMAIN', 
+    'VITE_FIREBASE_PROJECT_ID',
+    'VITE_FIREBASE_APP_ID'
+  ];
+  
+  return requiredVars.every(varName => {
+    const value = import.meta.env[varName];
+    return value && value !== 'your-api-key' && value !== 'demo-api-key';
+  });
+};
+
 // Firebase設定
-// 実際のプロジェクトでは環境変数を使用してください
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "demo-api-key",
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "book-scanner-demo.firebaseapp.com",
@@ -15,13 +29,27 @@ const firebaseConfig = {
 };
 
 // Firebase初期化
-const app = initializeApp(firebaseConfig);
+let app, auth, database;
 
-// Auth初期化
-export const auth = getAuth(app);
+try {
+  app = initializeApp(firebaseConfig);
+  auth = getAuth(app);
+  
+  // Realtime Database初期化（設定が有効な場合のみ）
+  if (hasValidConfig()) {
+    database = getDatabase(app);
+    console.log('Firebase initialized successfully with real config');
+  } else {
+    console.warn('Firebase initialized with demo config - some features may not work');
+    database = null;
+  }
+} catch (error) {
+  console.error('Firebase initialization error:', error);
+  auth = null;
+  database = null;
+}
 
-// Realtime Database初期化
-export const database = getDatabase(app);
+export { auth, database };
 
 // デバッグ情報
 console.log('Firebase initialized with config:', {

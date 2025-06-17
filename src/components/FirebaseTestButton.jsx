@@ -4,12 +4,22 @@ import { ref, set, push, onValue, off } from 'firebase/database';
 import { TestTube, CheckCircle, XCircle } from 'lucide-react';
 
 const FirebaseTestButton = () => {
-  const [istesting, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [testResult, setTestResult] = useState(null);
 
   const testFirebaseConnection = async () => {
     setIsLoading(true);
     setTestResult(null);
+
+    // databaseが利用できない場合
+    if (!database) {
+      setTestResult({
+        success: false,
+        message: 'Firebase設定が無効です。環境変数を確認してください。'
+      });
+      setIsLoading(false);
+      return;
+    }
 
     try {
       // テストデータの参照を作成
