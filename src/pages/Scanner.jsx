@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import { useBooks } from '../contexts/BookContext';
 import { fetchBookInfo } from '../utils/bookAPI';
+import { enhancedBarcodeDetection, captureImageFromVideo, convertJANtoISBN } from '../utils/googleVisionAPI';
 import LocationModal from '../components/LocationModal';
-import { Scan, X, Loader } from 'lucide-react';
+import { Scan, X, Loader, Eye } from 'lucide-react';
 
 const Scanner = () => {
   const [isScanning, setIsScanning] = useState(false);
@@ -13,6 +14,9 @@ const Scanner = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [pendingBookInfo, setPendingBookInfo] = useState(null);
+  const [useVisionAPI, setUseVisionAPI] = useState(false);
+  const [videoRef, setVideoRef] = useState(null);
+  const [janCode, setJanCode] = useState('');
   const { addBook } = useBooks();
   const navigate = useNavigate();
 
@@ -47,16 +51,36 @@ const Scanner = () => {
     setScannedCode(decodedText);
     setIsScanning(false);
     
-    // ISBNコードの簡単な検証
+    // ISBNコードの検証
     if (decodedText.match(/^(978|979)\d{10}$/) || decodedText.match(/^\d{10}$/)) {
       handleISBNScanned(decodedText);
-    } else {
-      setError('有効なISBNコードではありません');
+    } 
+    // JANコード（日本図書コード）の検証
+    else if (decodedText.match(/^(491|192)\d{10}$/)) {
+      handleJANScanned(decodedText);
+    } 
+    else {
+      setError('有効なISBNまたはJANコードではありません');
     }
   };
 
   const onScanFailure = (error) => {
     // スキャンエラーは頻繁に発生するので、ログには出力しない
+  };
+
+  const handleJANScanned = async (janCode) => {
+    setJanCode(janCode);
+    const isbn = convertJANtoISBN(janCode);
+    
+    if (isbn) {
+      setScannedCode(`JAN: ${janCode} → ISBN: ${isbn}`);
+      await handleISBNScanned(isbn);
+    } else {
+      setError('JANコードからISBNへの変換に失敗しました。手動で入力してください。');
+      setTimeout(() => {
+        navigate('/add', { state: { janCode } });
+      }, 2000);
+    }
   };
 
   const handleISBNScanned = async (isbn) => {
@@ -75,7 +99,7 @@ const Scanner = () => {
         // API取得失敗 - 手動入力画面へ
         setError('書籍情報が見つかりませんでした。手動で入力してください。');
         setTimeout(() => {
-          navigate('/add', { state: { isbn } });
+          navigate('/add', { state: { isbn, janCode } });
         }, 2000);
       }
     } catch (err) {
@@ -86,14 +110,41 @@ const Scanner = () => {
     }
   };
 
+  const handleVisionAPICapture = async () => {
+    if (!videoRef) return;
+    
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const imageData = captureImageFromVideo(videoRef);
+      const detectedISBN = await enhancedBarcodeDetection(imageData);
+      
+      if (detectedISBN) {
+        setScannedCode(`Vision API検出: ${detectedISBN}`);
+        setIsScanning(false);
+        await handleISBNScanned(detectedISBN);
+      } else {
+        setError('バーコードを検出できませんでした。もう一度お試しください。');
+      }
+    } catch (error) {
+      console.error('Vision API error:', error);
+      setError('カメラ画像の処理中にエラーが発生しました。');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const startScanning = () => {
     setIsScanning(true);
     setError('');
     setScannedCode('');
+    setJanCode('');
   };
 
   const stopScanning = () => {
     setIsScanning(false);
+    setVideoRef(null);
   };
 
   const handleLocationSave = (bookDataWithLocation) => {
@@ -119,11 +170,21 @@ const Scanner = () => {
           <div style={{ textAlign: 'center', padding: '2rem' }}>
             <Scan size={64} style={{ color: '#007bff', marginBottom: '1rem' }} />
             <p style={{ marginBottom: '2rem', color: '#666' }}>
-              書籍のバーコード（ISBN）をスキャンして登録できます
+              書籍のバーコード（ISBN・JAN）をスキャンして登録できます
             </p>
-            <button className="primary-button" onClick={startScanning}>
-              スキャンを開始
-            </button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'center' }}>
+              <button className="primary-button" onClick={startScanning}>
+                標準スキャンを開始
+              </button>
+              <button 
+                className="secondary-button" 
+                onClick={() => { setUseVisionAPI(true); startScanning(); }}
+                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+              >
+                <Eye size={20} />
+                AI強化スキャン（Vision API）
+              </button>
+            </div>
             
             {scannedCode && (
               <div style={{ marginTop: '2rem', padding: '1rem', backgroundColor: '#f8f9fa', borderRadius: '4px' }}>
@@ -157,6 +218,24 @@ const Scanner = () => {
                 キャンセル
               </button>
             </div>
+            
+            {useVisionAPI && (
+              <div style={{ marginBottom: '1rem', textAlign: 'center' }}>
+                <button 
+                  className="primary-button" 
+                  onClick={handleVisionAPICapture}
+                  disabled={isLoading}
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0 auto' }}
+                >
+                  <Eye size={20} />
+                  AI画像解析でスキャン
+                </button>
+                <p style={{ fontSize: '0.9rem', color: '#666', marginTop: '0.5rem' }}>
+                  より高精度なバーコード検出を行います
+                </p>
+              </div>
+            )}
+            
             <div id="reader" style={{ width: '100%' }}></div>
           </div>
         )}
@@ -164,9 +243,11 @@ const Scanner = () => {
         <div style={{ marginTop: '2rem', padding: '1rem', backgroundColor: '#e3f2fd', borderRadius: '4px' }}>
           <h4 style={{ marginBottom: '0.5rem', color: '#1976d2' }}>ヒント</h4>
           <ul style={{ marginLeft: '1.5rem', color: '#666' }}>
-            <li>書籍の裏表紙にあるバーコードをスキャンしてください</li>
+            <li>書籍の裏表紙にあるバーコード（ISBN・JAN）をスキャンしてください</li>
             <li>明るい場所でスキャンすると認識しやすくなります</li>
             <li>バーコードが画面内に収まるように調整してください</li>
+            <li>標準スキャンで読み取れない場合は「AI強化スキャン」をお試しください</li>
+            <li>JANコードは自動的にISBNに変換されます</li>
           </ul>
         </div>
       </div>
