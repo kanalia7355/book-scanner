@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useBooks } from '../contexts/BookContext';
+import { fetchBookInfo } from '../utils/bookAPI';
 import ImageUpload from '../components/ImageUpload';
 import LocationInput from '../components/LocationInput';
-import { Save, X, ArrowLeft } from 'lucide-react';
+import { Save, X, ArrowLeft, Search, Loader } from 'lucide-react';
 
 const EditBook = () => {
   const { id } = useParams();
@@ -26,6 +27,9 @@ const EditBook = () => {
   });
 
   const [errors, setErrors] = useState({});
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchResult, setSearchResult] = useState(null);
+  const [lastSearchedCode, setLastSearchedCode] = useState('');
 
   useEffect(() => {
     if (book) {
@@ -43,6 +47,67 @@ const EditBook = () => {
       });
     }
   }, [book]);
+
+  // ISBN/JANコードの自動検索
+  useEffect(() => {
+    const searchCode = formData.isbn.trim();
+    
+    // コードが有効で、前回検索したコードと異なり、かつ初期値と異なる場合のみ検索
+    if (searchCode && 
+        searchCode !== lastSearchedCode && 
+        searchCode !== (book?.isbn || '') && // 元の書籍のISBNと異なる場合のみ
+        (searchCode.length === 10 || searchCode.length === 13) &&
+        searchCode.match(/^\d+$/)) {
+      
+      const timeoutId = setTimeout(async () => {
+        setIsSearching(true);
+        setSearchResult(null);
+        setLastSearchedCode(searchCode);
+        
+        try {
+          console.log('Auto-searching for code (edit):', searchCode);
+          const bookInfo = await fetchBookInfo(searchCode);
+          
+          if (bookInfo) {
+            setSearchResult({
+              success: true,
+              data: bookInfo,
+              message: '書籍情報が見つかりました'
+            });
+          } else {
+            setSearchResult({
+              success: false,
+              message: '書籍情報が見つかりませんでした'
+            });
+          }
+        } catch (error) {
+          console.error('Auto-search error (edit):', error);
+          setSearchResult({
+            success: false,
+            message: '検索中にエラーが発生しました'
+          });
+        } finally {
+          setIsSearching(false);
+        }
+      }, 1000); // 1秒のデバウンス
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [formData.isbn, lastSearchedCode, book?.isbn]);
+
+  const applyBookInfo = (bookInfo) => {
+    setFormData(prev => ({
+      ...prev,
+      title: bookInfo.title || prev.title,
+      author: bookInfo.author || prev.author,
+      publisher: bookInfo.publisher || prev.publisher,
+      publishDate: bookInfo.publishDate || prev.publishDate,
+      pages: bookInfo.pages ? bookInfo.pages.toString() : prev.pages,
+      description: bookInfo.description || prev.description,
+      category: bookInfo.category || prev.category,
+      imageUrl: bookInfo.imageUrl || prev.imageUrl,
+    }));
+  };
 
   if (!book) {
     return (
@@ -203,14 +268,78 @@ const EditBook = () => {
 
           <div className="form-group">
             <label className="form-label">ISBN / JAN</label>
-            <input
-              type="text"
-              name="isbn"
-              value={formData.isbn}
-              onChange={handleChange}
-              placeholder="978-0000000000 or 4910000000000"
-            />
+            <div style={{ position: 'relative' }}>
+              <input
+                type="text"
+                name="isbn"
+                value={formData.isbn}
+                onChange={handleChange}
+                placeholder="978-0000000000 or 4910000000000"
+                style={{ paddingRight: '40px' }}
+              />
+              {isSearching && (
+                <div style={{
+                  position: 'absolute',
+                  right: '12px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  color: '#007bff'
+                }}>
+                  <Loader size={16} style={{ animation: 'spin 1s linear infinite' }} />
+                </div>
+              )}
+            </div>
             {errors.isbn && <div className="error-message">{errors.isbn}</div>}
+            
+            {/* 検索結果の表示 */}
+            {searchResult && (
+              <div style={{
+                marginTop: '0.5rem',
+                padding: '0.75rem',
+                borderRadius: '4px',
+                fontSize: '0.9rem',
+                backgroundColor: searchResult.success ? '#d4edda' : '#fff3cd',
+                border: `1px solid ${searchResult.success ? '#c3e6cb' : '#ffeaa7'}`,
+                color: searchResult.success ? '#155724' : '#856404'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                  <Search size={16} />
+                  <span>{searchResult.message}</span>
+                </div>
+                
+                {searchResult.success && searchResult.data && (
+                  <>
+                    <div style={{ fontSize: '0.8rem', marginBottom: '0.75rem', opacity: 0.8 }}>
+                      検出された書籍情報:
+                    </div>
+                    <div style={{ fontSize: '0.85rem', lineHeight: '1.4', marginBottom: '0.75rem' }}>
+                      <div><strong>タイトル:</strong> {searchResult.data.title}</div>
+                      <div><strong>著者:</strong> {searchResult.data.author}</div>
+                      <div><strong>出版社:</strong> {searchResult.data.publisher}</div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => applyBookInfo(searchResult.data)}
+                      style={{
+                        padding: '0.5rem 1rem',
+                        fontSize: '0.8rem',
+                        backgroundColor: '#28a745',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}
+                    >
+                      <Search size={14} />
+                      この情報で更新
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="form-group">
