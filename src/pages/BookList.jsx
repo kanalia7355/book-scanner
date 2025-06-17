@@ -5,7 +5,7 @@ import DataManagement from '../components/DataManagement';
 import { Search, Book, Calendar, User, Filter, MapPin } from 'lucide-react';
 
 const BookList = () => {
-  const { books, searchBooks, getLocations, sortBooksByLocation } = useBooks();
+  const { books, loading, error, searchBooks, getLocations, sortBooksByLocation } = useBooks();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedLocation, setSelectedLocation] = useState('');
@@ -194,7 +194,20 @@ const BookList = () => {
           </div>
         )}
 
-        {displayedBooks.length === 0 ? (
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '2rem' }}>
+            <div style={{ fontSize: '1.2rem', marginBottom: '1rem' }}>データを読み込み中...</div>
+            <div style={{ animation: 'spin 1s linear infinite', display: 'inline-block' }}>⏳</div>
+          </div>
+        ) : error ? (
+          <div style={{ textAlign: 'center', padding: '2rem', color: '#dc3545' }}>
+            <div style={{ fontSize: '1.2rem', marginBottom: '1rem' }}>⚠️ エラーが発生しました</div>
+            <div style={{ fontSize: '0.9rem' }}>{error}</div>
+            <div style={{ fontSize: '0.8rem', marginTop: '0.5rem', color: '#666' }}>
+              ローカルデータがある場合は表示されます
+            </div>
+          </div>
+        ) : displayedBooks.length === 0 ? (
           <div className="empty-state">
             <Book size={64} />
             <h3>書籍が登録されていません</h3>

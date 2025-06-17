@@ -29,9 +29,14 @@ const BookDetail = () => {
     );
   }
 
-  const handleDelete = () => {
-    deleteBook(id);
-    navigate('/');
+  const handleDelete = async () => {
+    try {
+      await deleteBook(id);
+      navigate('/');
+    } catch (error) {
+      console.error('Error deleting book:', error);
+      alert('書籍の削除中にエラーが発生しました。');
+    }
   };
 
   return (

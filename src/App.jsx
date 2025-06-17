@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { BookProvider } from './contexts/BookContext';
 import Header from './components/Header';
+import ConnectionStatus from './components/ConnectionStatus';
 import BookList from './pages/BookList';
 import Scanner from './pages/Scanner';
 import AddBook from './pages/AddBook';
@@ -13,6 +14,7 @@ function App() {
       <Router>
         <div id="root">
           <Header />
+          <ConnectionStatus />
           <Routes>
             <Route path="/" element={<BookList />} />
             <Route path="/scan" element={<Scanner />} />

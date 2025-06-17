@@ -88,7 +88,7 @@ const AddBook = () => {
     return newErrors;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     const newErrors = validateForm();
@@ -102,8 +102,13 @@ const AddBook = () => {
       pages: formData.pages ? parseInt(formData.pages) : null,
     };
     
-    const newBook = addBook(bookData);
-    navigate(`/book/${newBook.id}`);
+    try {
+      const newBook = await addBook(bookData);
+      navigate(`/book/${newBook.id}`);
+    } catch (error) {
+      console.error('Error adding book:', error);
+      setErrors({ submit: '書籍の追加中にエラーが発生しました。' });
+    }
   };
 
   const handleCancel = () => {

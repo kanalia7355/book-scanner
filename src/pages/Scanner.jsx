@@ -147,11 +147,16 @@ const Scanner = () => {
     setVideoRef(null);
   };
 
-  const handleLocationSave = (bookDataWithLocation) => {
-    const newBook = addBook(bookDataWithLocation);
-    setShowLocationModal(false);
-    setPendingBookInfo(null);
-    navigate(`/book/${newBook.id}`);
+  const handleLocationSave = async (bookDataWithLocation) => {
+    try {
+      const newBook = await addBook(bookDataWithLocation);
+      setShowLocationModal(false);
+      setPendingBookInfo(null);
+      navigate(`/book/${newBook.id}`);
+    } catch (error) {
+      console.error('Error adding book:', error);
+      setError('書籍の追加中にエラーが発生しました。');
+    }
   };
 
   const handleLocationCancel = () => {

@@ -99,7 +99,7 @@ const EditBook = () => {
     return newErrors;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     const newErrors = validateForm();
@@ -113,8 +113,13 @@ const EditBook = () => {
       pages: formData.pages ? parseInt(formData.pages) : null,
     };
     
-    updateBook(id, bookData);
-    navigate(`/book/${id}`);
+    try {
+      await updateBook(id, bookData);
+      navigate(`/book/${id}`);
+    } catch (error) {
+      console.error('Error updating book:', error);
+      setErrors({ submit: '書籍の更新中にエラーが発生しました。' });
+    }
   };
 
   const handleCancel = () => {
