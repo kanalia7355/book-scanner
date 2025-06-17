@@ -100,72 +100,99 @@ export const convertJANtoISBN = (janCode) => {
     return null;
   }
   
-  // JANコードが491で始まる場合（日本図書コード）
-  if (janCode.startsWith('491')) {
-    // 複数のパターンを試行
+  // 日本図書コード（192, 198, 199, 491など）の処理
+  const isJapaneseBookCode = janCode.startsWith('192') || 
+                            janCode.startsWith('198') || 
+                            janCode.startsWith('199') || 
+                            janCode.startsWith('491');
+  
+  if (isJapaneseBookCode) {
+    console.log('Japanese book code detected with prefix:', janCode.substring(0, 3));
     
-    // パターン1: 491 + 出版社コード(1桁) + ISBN-10の9桁 + JANチェックデジット
-    // ISBN-10の9桁を抽出（4-12桁目）
-    const isbn10Part1 = janCode.substring(4, 12); // 8桁
-    console.log('Pattern 1 - ISBN-10 part (8 digits):', isbn10Part1);
+    const prefix = janCode.substring(0, 3);
     
-    // 978プレフィックスでISBN-13を構築
-    const isbn13Base1 = '978' + isbn10Part1; // 11桁
-    console.log('Pattern 1 - ISBN-13 base (11 digits):', isbn13Base1);
-    
-    // チェックデジットを計算するために、足りない桁を推測
-    // 日本の出版社コードを推測して試行
-    for (let publisherDigit = 0; publisherDigit <= 9; publisherDigit++) {
-      const isbn13Base = '978' + publisherDigit + isbn10Part1; // 12桁
-      const checkDigit = calculateISBN13CheckDigit(isbn13Base);
-      const isbn13 = isbn13Base + checkDigit;
+    // 日本図書コードの構造に基づいた変換パターン
+    const conversionPatterns = [
+      // パターン1: プレフィックス3桁を除いた残り10桁から9桁を抽出してISBN-13を構築
+      () => {
+        const digits = janCode.substring(3, 12); // 9桁
+        console.log(`Pattern 1 (${prefix}) - Extracted 9 digits:`, digits);
+        const isbn13Base = '978' + digits;
+        const checkDigit = calculateISBN13CheckDigit(isbn13Base);
+        return isbn13Base + checkDigit;
+      },
       
-      if (validateISBN13(isbn13)) {
-        console.log('Pattern 1 success - Generated ISBN-13:', isbn13);
-        return isbn13;
+      // パターン2: プレフィックス3桁 + 1桁を除いた残り9桁でISBN-13を構築
+      () => {
+        const digits = janCode.substring(4, 13); // 9桁
+        console.log(`Pattern 2 (${prefix}) - Extracted 9 digits from position 4:`, digits);
+        const isbn13Base = '978' + digits;
+        const checkDigit = calculateISBN13CheckDigit(isbn13Base);
+        return isbn13Base + checkDigit;
+      },
+      
+      // パターン3: プレフィックス特別処理 - 192/198/199は異なる構造の可能性
+      () => {
+        if (prefix === '192' || prefix === '198' || prefix === '199') {
+          // 192/198/199の場合の特別処理
+          const digits = janCode.substring(3, 12); // 9桁
+          console.log(`Pattern 3 (${prefix}) - Special handling for ${prefix}:`, digits);
+          
+          // 979プレフィックスも試行
+          const isbn13Base979 = '979' + digits;
+          const checkDigit979 = calculateISBN13CheckDigit(isbn13Base979);
+          const isbn13_979 = isbn13Base979 + checkDigit979;
+          
+          if (validateISBN13(isbn13_979)) {
+            return isbn13_979;
+          }
+          
+          // 978プレフィックスでも試行
+          const isbn13Base978 = '978' + digits;
+          const checkDigit978 = calculateISBN13CheckDigit(isbn13Base978);
+          return isbn13Base978 + checkDigit978;
+        }
+        return null;
+      },
+      
+      // パターン4: 出版社コードを推測しながら変換
+      () => {
+        const baseDigits = janCode.substring(4, 12); // 8桁
+        console.log(`Pattern 4 (${prefix}) - Base digits for publisher guessing:`, baseDigits);
+        
+        // 日本でよく使われる出版社コードを優先して試行
+        const commonPublisherCodes = ['4', '0', '1', '2', '3', '5', '6', '7', '8', '9'];
+        
+        for (const pubCode of commonPublisherCodes) {
+          const isbn13Base = '978' + pubCode + baseDigits;
+          const checkDigit = calculateISBN13CheckDigit(isbn13Base);
+          const isbn13 = isbn13Base + checkDigit;
+          
+          if (validateISBN13(isbn13)) {
+            console.log(`Pattern 4 success with publisher code ${pubCode}`);
+            return isbn13;
+          }
+        }
+        return null;
+      }
+    ];
+    
+    // 各パターンを順番に試行
+    for (let i = 0; i < conversionPatterns.length; i++) {
+      try {
+        const result = conversionPatterns[i]();
+        if (result && validateISBN13(result)) {
+          console.log(`Pattern ${i + 1} success - Generated ISBN-13:`, result);
+          return result;
+        } else if (result) {
+          console.log(`Pattern ${i + 1} generated invalid ISBN:`, result);
+        }
+      } catch (error) {
+        console.error(`Pattern ${i + 1} error:`, error);
       }
     }
     
-    // パターン2: より直接的な変換
-    // JANコードの中間部分をISBNとして使用
-    const isbn10Part2 = janCode.substring(3, 12); // 9桁
-    console.log('Pattern 2 - ISBN-10 part (9 digits):', isbn10Part2);
-    
-    const isbn13Base2 = '978' + isbn10Part2; // 12桁
-    const checkDigit2 = calculateISBN13CheckDigit(isbn13Base2);
-    const isbn13_2 = isbn13Base2 + checkDigit2;
-    
-    console.log('Pattern 2 - Generated ISBN-13:', isbn13_2);
-    
-    if (validateISBN13(isbn13_2)) {
-      console.log('Pattern 2 success');
-      return isbn13_2;
-    }
-    
-    // パターン3: JANコードの数字部分を直接使用してISBNを構築
-    // 元のJANコードから491を除いた残りの10桁
-    const remainingDigits = janCode.substring(3); // 10桁
-    console.log('Pattern 3 - Remaining digits:', remainingDigits);
-    
-    // 978プレフィックス + 残りの9桁でISBN-13を構築
-    const isbn13Base3 = '978' + remainingDigits.substring(0, 9); // 12桁
-    const checkDigit3 = calculateISBN13CheckDigit(isbn13Base3);
-    const isbn13_3 = isbn13Base3 + checkDigit3;
-    
-    console.log('Pattern 3 - Generated ISBN-13:', isbn13_3);
-    
-    if (validateISBN13(isbn13_3)) {
-      console.log('Pattern 3 success');
-      return isbn13_3;
-    }
-    
-    console.log('All patterns failed for JAN code:', janCode);
-  }
-  
-  // JANコードが192で始まる場合（雑誌コード）
-  if (janCode.startsWith('192')) {
-    console.log('Magazine JAN code detected, no ISBN conversion');
-    return null;
+    console.log(`All patterns failed for ${prefix} JAN code:`, janCode);
   }
   
   console.log('No conversion rule found for JAN code:', janCode);
