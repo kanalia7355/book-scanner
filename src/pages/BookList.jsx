@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useBooks } from '../contexts/BookContext';
 import DataManagement from '../components/DataManagement';
+import FirebaseTestButton from '../components/FirebaseTestButton';
 import { Search, Book, Calendar, User, Filter, MapPin } from 'lucide-react';
 
 const BookList = () => {
@@ -291,6 +292,12 @@ const BookList = () => {
             <DataManagement />
           </div>
         )}
+
+        {/* Firebase接続テスト（開発・デバッグ用） */}
+        <div style={{ marginTop: '2rem', padding: '1rem', backgroundColor: '#f8f9fa', borderRadius: '4px' }}>
+          <h4 style={{ marginBottom: '0.5rem', color: '#666' }}>開発者ツール</h4>
+          <FirebaseTestButton />
+        </div>
       </div>
 
       <style jsx>{`

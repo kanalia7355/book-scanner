@@ -23,6 +23,14 @@ export const auth = getAuth(app);
 // Realtime Database初期化
 export const database = getDatabase(app);
 
+// デバッグ情報
+console.log('Firebase initialized with config:', {
+  authDomain: firebaseConfig.authDomain,
+  projectId: firebaseConfig.projectId,
+  databaseURL: firebaseConfig.databaseURL,
+  hasApiKey: !!firebaseConfig.apiKey
+});
+
 // Google認証プロバイダー
 export const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({

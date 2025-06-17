@@ -25,6 +25,7 @@ export const BookProvider = ({ children }) => {
   // Firebase からリアルタイムでデータを取得
   useEffect(() => {
     console.log('Setting up Firebase listener...');
+    console.log('Database reference:', booksRef.toString());
     
     const unsubscribe = onValue(booksRef, (snapshot) => {
       try {
@@ -91,7 +92,9 @@ export const BookProvider = ({ children }) => {
       
       // Firebase に保存（IDは自動生成）
       const newBookRef = push(booksRef);
+      console.log('Adding book to Firebase with ID:', newBookRef.key);
       await set(newBookRef, newBook);
+      console.log('Book successfully added to Firebase');
       
       // IDを含む完全なオブジェクトを返す
       return {
@@ -100,7 +103,7 @@ export const BookProvider = ({ children }) => {
       };
     } catch (err) {
       console.error('Error adding book to Firebase:', err);
-      setError(err.message);
+      setError(`書籍追加エラー: ${err.message}`);
       
       // フォールバック: ローカルのみで追加
       const newBook = {
