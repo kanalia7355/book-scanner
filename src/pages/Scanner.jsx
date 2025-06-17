@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import { useBooks } from '../contexts/BookContext';
 import { fetchBookInfo } from '../utils/bookAPI';
-import { enhancedBarcodeDetection, captureImageFromVideo, convertJANtoISBN } from '../utils/googleVisionAPI';
+import { enhancedBarcodeDetection, captureImageFromVideo } from '../utils/googleVisionAPI';
 import LocationModal from '../components/LocationModal';
 import { Scan, X, Loader, Eye } from 'lucide-react';
 
@@ -70,26 +70,19 @@ const Scanner = () => {
 
   const handleJANScanned = async (janCode) => {
     setJanCode(janCode);
-    const isbn = convertJANtoISBN(janCode);
+    setScannedCode(`日本図書コード（JAN）: ${janCode}`);
     
-    if (isbn) {
-      setScannedCode(`JAN: ${janCode} → ISBN: ${isbn}`);
-      await handleISBNScanned(isbn);
-    } else {
-      setError('JANコードからISBNへの変換に失敗しました。手動で入力してください。');
-      setTimeout(() => {
-        navigate('/add', { state: { janCode } });
-      }, 2000);
-    }
+    // JANコードを直接使って書籍情報を取得
+    await handleBookCodeScanned(janCode);
   };
 
-  const handleISBNScanned = async (isbn) => {
+  const handleBookCodeScanned = async (code) => {
     setIsLoading(true);
     setError('');
 
     try {
-      // APIから書籍情報を取得
-      const bookInfo = await fetchBookInfo(isbn);
+      // APIから書籍情報を取得（JAN/ISBN自動判定）
+      const bookInfo = await fetchBookInfo(code);
 
       if (bookInfo) {
         // API取得成功 - 場所入力モーダルを表示
@@ -99,7 +92,7 @@ const Scanner = () => {
         // API取得失敗 - 手動入力画面へ
         setError('書籍情報が見つかりませんでした。手動で入力してください。');
         setTimeout(() => {
-          navigate('/add', { state: { isbn, janCode } });
+          navigate('/add', { state: { isbn: code, janCode } });
         }, 2000);
       }
     } catch (err) {
@@ -108,6 +101,11 @@ const Scanner = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleISBNScanned = async (isbn) => {
+    setScannedCode(`ISBN: ${isbn}`);
+    await handleBookCodeScanned(isbn);
   };
 
   const handleVisionAPICapture = async () => {
@@ -123,7 +121,7 @@ const Scanner = () => {
       if (detectedISBN) {
         setScannedCode(`Vision API検出: ${detectedISBN}`);
         setIsScanning(false);
-        await handleISBNScanned(detectedISBN);
+        await handleBookCodeScanned(detectedISBN);
       } else {
         setError('バーコードを検出できませんでした。もう一度お試しください。');
       }
@@ -252,7 +250,7 @@ const Scanner = () => {
             <li>明るい場所でスキャンすると認識しやすくなります</li>
             <li>バーコードが画面内に収まるように調整してください</li>
             <li>標準スキャンで読み取れない場合は「AI強化スキャン」をお試しください</li>
-            <li>JANコードは自動的にISBNに変換されます</li>
+            <li>JANコード（日本図書コード）で直接書籍情報を取得します</li>
           </ul>
         </div>
       </div>

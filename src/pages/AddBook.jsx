@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useBooks } from '../contexts/BookContext';
-import { convertJANtoISBN } from '../utils/googleVisionAPI';
+// import { convertJANtoISBN } from '../utils/googleVisionAPI'; // 不要になったため削除
 import ImageUpload from '../components/ImageUpload';
 import LocationInput from '../components/LocationInput';
 import { Save, X } from 'lucide-react';
@@ -38,14 +38,7 @@ const AddBook = () => {
     
     if (location.state?.janCode) {
       setJanCode(location.state.janCode);
-      // JANからISBNへの変換を試行
-      const convertedISBN = convertJANtoISBN(location.state.janCode);
-      if (convertedISBN) {
-        setFormData(prev => ({
-          ...prev,
-          isbn: convertedISBN
-        }));
-      }
+      // JANコードをそのまま表示（変換は行わない）
     }
   }, [location.state]);
 
@@ -185,12 +178,10 @@ const AddBook = () => {
 
           {janCode && (
             <div className="card" style={{ backgroundColor: '#f8f9fa', marginBottom: '1rem' }}>
-              <strong>日本図書コード（JAN）: {janCode}</strong>
-              {formData.isbn && (
-                <div style={{ color: '#28a745', marginTop: '0.5rem' }}>
-                  ✓ ISBNに変換されました: {formData.isbn}
-                </div>
-              )}
+              <strong>スキャンされた日本図書コード（JAN）: {janCode}</strong>
+              <div style={{ color: '#666', marginTop: '0.5rem', fontSize: '0.9rem' }}>
+                JANコードから書籍情報の取得に失敗しました。手動で入力してください。
+              </div>
             </div>
           )}
 
@@ -204,11 +195,6 @@ const AddBook = () => {
               placeholder="978-0-0000-0000-0"
             />
             {errors.isbn && <div className="error-message">{errors.isbn}</div>}
-            {janCode && !formData.isbn && (
-              <div style={{ fontSize: '0.9rem', color: '#dc3545', marginTop: '0.25rem' }}>
-                JANコードからISBNへの変換に失敗しました。手動で入力してください。
-              </div>
-            )}
           </div>
 
           <div className="form-group">
