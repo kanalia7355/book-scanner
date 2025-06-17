@@ -89,7 +89,7 @@ const EditBook = () => {
     }
     
     if (formData.isbn && !formData.isbn.match(/^[\d-]{10,13}$/)) {
-      newErrors.isbn = '有効なISBNを入力してください';
+      newErrors.isbn = '有効なISBNまたはJANコードを入力してください';
     }
     
     if (formData.pages && !formData.pages.match(/^\d+$/)) {
@@ -202,13 +202,13 @@ const EditBook = () => {
           </div>
 
           <div className="form-group">
-            <label className="form-label">ISBN</label>
+            <label className="form-label">ISBN / JAN</label>
             <input
               type="text"
               name="isbn"
               value={formData.isbn}
               onChange={handleChange}
-              placeholder="978-0-0000-0000-0"
+              placeholder="978-0000000000 or 4910000000000"
             />
             {errors.isbn && <div className="error-message">{errors.isbn}</div>}
           </div>

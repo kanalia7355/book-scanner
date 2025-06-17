@@ -110,22 +110,91 @@ export const fetchBookByJAN = async (janCode) => {
     const summary = bookData.summary || {};
     const onix = bookData.onix || {};
     const descriptiveDetail = onix.DescriptiveDetail || {};
+    const publishingDetail = onix.PublishingDetail || {};
+    const productSupply = onix.ProductSupply || {};
     
-    console.log('openBD API response:', bookData);
+    console.log('openBD API response (summary):', summary);
+    console.log('openBD API response (onix):', onix);
     
-    return {
-      title: summary.title || '',
-      author: summary.author || '',
-      publisher: summary.publisher || '',
-      publishDate: summary.pubdate || '',
-      pages: summary.pages || null,
-      description: summary.description || '',
-      category: descriptiveDetail.Subject ? descriptiveDetail.Subject.map(s => s.SubjectHeadingText).join(', ') : '',
+    // より詳細なデータ抽出を試行
+    let title = summary.title || '';
+    let author = summary.author || '';
+    let publisher = summary.publisher || '';
+    let publishDate = summary.pubdate || '';
+    let description = summary.description || '';
+    let pages = summary.pages || null;
+    let imageUrl = summary.cover || null;
+    
+    // ONIXデータからも情報を取得
+    if (descriptiveDetail.TitleDetail && descriptiveDetail.TitleDetail[0]) {
+      const titleDetail = descriptiveDetail.TitleDetail[0].TitleElement;
+      if (titleDetail && titleDetail[0] && !title) {
+        title = titleDetail[0].TitleText || '';
+      }
+    }
+    
+    // 著者情報の詳細取得
+    if (descriptiveDetail.Contributor && descriptiveDetail.Contributor.length > 0 && !author) {
+      const contributors = descriptiveDetail.Contributor
+        .filter(c => c.ContributorRole && ['A01', 'A02'].includes(c.ContributorRole[0]))
+        .map(c => c.PersonName || c.PersonNameInverted || '')
+        .filter(name => name);
+      if (contributors.length > 0) {
+        author = contributors.join(', ');
+      }
+    }
+    
+    // 出版社情報の詳細取得
+    if (publishingDetail.Publisher && publishingDetail.Publisher.length > 0 && !publisher) {
+      publisher = publishingDetail.Publisher[0].PublisherName || '';
+    }
+    
+    // 出版日の詳細取得
+    if (publishingDetail.PublishingDate && publishingDetail.PublishingDate.length > 0 && !publishDate) {
+      publishDate = publishingDetail.PublishingDate[0].Date || '';
+    }
+    
+    // ページ数の詳細取得
+    if (descriptiveDetail.Extent && descriptiveDetail.Extent.length > 0 && !pages) {
+      const pageExtent = descriptiveDetail.Extent.find(e => e.ExtentType && e.ExtentType[0] === '00');
+      if (pageExtent && pageExtent.ExtentValue) {
+        pages = parseInt(pageExtent.ExtentValue[0]) || null;
+      }
+    }
+    
+    // 説明文の詳細取得
+    if (descriptiveDetail.TextContent && descriptiveDetail.TextContent.length > 0 && !description) {
+      const textContent = descriptiveDetail.TextContent.find(t => t.TextType && ['02', '03'].includes(t.TextType[0]));
+      if (textContent && textContent.Text) {
+        description = textContent.Text[0] || '';
+      }
+    }
+    
+    // カテゴリ情報の詳細取得
+    let category = '';
+    if (descriptiveDetail.Subject && descriptiveDetail.Subject.length > 0) {
+      const subjects = descriptiveDetail.Subject
+        .map(s => s.SubjectHeadingText || s.SubjectCode || '')
+        .filter(subject => subject);
+      category = subjects.join(', ');
+    }
+    
+    const result = {
+      title: title || '不明',
+      author: author || '不明',
+      publisher: publisher || '不明',
+      publishDate: publishDate || '',
+      pages: pages,
+      description: description || '',
+      category: category || '',
       isbn: summary.isbn || janCode,
-      imageUrl: summary.cover || null,
+      imageUrl: imageUrl,
       language: 'ja',
       source: 'openBD'
     };
+    
+    console.log('Processed openBD result:', result);
+    return result;
   } catch (error) {
     console.error('Error fetching book data from openBD:', error);
     return null;

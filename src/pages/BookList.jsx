@@ -4,6 +4,7 @@ import { useBooks } from '../contexts/BookContext';
 import DataManagement from '../components/DataManagement';
 import FirebaseTestButton from '../components/FirebaseTestButton';
 import JANTestButton from '../components/JANTestButton';
+import OpenBDTestButton from '../components/OpenBDTestButton';
 import { Search, Book, Calendar, User, Filter, MapPin } from 'lucide-react';
 
 const BookList = () => {
@@ -259,7 +260,8 @@ const BookList = () => {
                       )}
                       {book.isbn && (
                         <p style={{ color: '#999', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
-                          ISBN: {book.isbn}
+                          {book.isbn.startsWith('192') || book.isbn.startsWith('198') || 
+                           book.isbn.startsWith('199') || book.isbn.startsWith('491') ? 'JAN:' : 'ISBN:'} {book.isbn}
                         </p>
                       )}
                       {book.location && (
@@ -299,6 +301,7 @@ const BookList = () => {
           <h4 style={{ marginBottom: '1rem', color: '#666' }}>開発者ツール</h4>
           <FirebaseTestButton />
           <JANTestButton />
+          <OpenBDTestButton />
         </div>
       </div>
 

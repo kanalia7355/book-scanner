@@ -114,7 +114,10 @@ const BookDetail = () => {
             {book.isbn && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <Hash size={20} style={{ color: '#666' }} />
-                <span style={{ fontWeight: '500' }}>ISBN:</span>
+                <span style={{ fontWeight: '500' }}>
+                  {book.isbn.startsWith('192') || book.isbn.startsWith('198') || 
+                   book.isbn.startsWith('199') || book.isbn.startsWith('491') ? 'JAN:' : 'ISBN:'}
+                </span>
                 <span>{book.isbn}</span>
               </div>
             )}
