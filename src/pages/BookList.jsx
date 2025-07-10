@@ -5,6 +5,7 @@ import DataManagement from '../components/DataManagement';
 import FirebaseTestButton from '../components/FirebaseTestButton';
 import JANTestButton from '../components/JANTestButton';
 import OpenBDTestButton from '../components/OpenBDTestButton';
+import ConnectionStatus from '../components/ConnectionStatus';
 import { Search, Book, Calendar, User, Filter, MapPin } from 'lucide-react';
 
 const BookList = () => {
@@ -302,6 +303,7 @@ const BookList = () => {
           <FirebaseTestButton />
           <JANTestButton />
           <OpenBDTestButton />
+          <ConnectionStatus />
         </div>
       </div>
 

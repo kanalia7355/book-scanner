@@ -10,10 +10,7 @@ const ConnectionStatus = () => {
 
   return (
     <div style={{
-      position: 'fixed',
-      top: '10px',
-      right: '10px',
-      zIndex: 1000,
+      marginTop: '1rem',
       padding: '8px 12px',
       borderRadius: '20px',
       fontSize: '0.8rem',
