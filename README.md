@@ -107,13 +107,6 @@ npm run preview
 4. ブランチにプッシュ (`git push origin feature/amazing-feature`)
 5. プルリクエストを作成
 
-## 📄 ライセンス
-
-MIT License - 詳細は [LICENSE](LICENSE) ファイルを参照してください。
-
-## 🐛 バグ報告・機能要望
-
-[Issues](https://github.com/your-username/book-scanner/issues) ページからお気軽にご報告ください。
 
 ---
 
