@@ -199,7 +199,8 @@ export const BookProvider = ({ children }) => {
       book.title?.toLowerCase().includes(lowercaseQuery) ||
       book.author?.toLowerCase().includes(lowercaseQuery) ||
       book.isbn?.toLowerCase().includes(lowercaseQuery) ||
-      book.location?.toLowerCase().includes(lowercaseQuery)
+      book.location?.toLowerCase().includes(lowercaseQuery) ||
+      book.managementNumber?.toLowerCase().includes(lowercaseQuery)
     );
   };
 
@@ -225,6 +226,17 @@ export const BookProvider = ({ children }) => {
     return Array.from(locationSet).sort();
   };
 
+  const isManagementNumberDuplicate = (managementNumber, excludeId = null) => {
+    if (!managementNumber || !managementNumber.trim()) {
+      return false;
+    }
+    return books.some(book => 
+      book.id !== excludeId && 
+      book.managementNumber && 
+      book.managementNumber.trim().toLowerCase() === managementNumber.trim().toLowerCase()
+    );
+  };
+
   const value = {
     books,
     loading,
@@ -238,6 +250,7 @@ export const BookProvider = ({ children }) => {
     getLocations,
     sortBooksByLocation,
     getBooksByLocation,
+    isManagementNumberDuplicate,
   };
 
   return (

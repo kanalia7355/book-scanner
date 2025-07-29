@@ -9,7 +9,7 @@ import { Save, X, ArrowLeft, Search, Loader } from 'lucide-react';
 const EditBook = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { getBook, updateBook } = useBooks();
+  const { getBook, updateBook, isManagementNumberDuplicate } = useBooks();
   
   const book = getBook(id);
   
@@ -24,6 +24,7 @@ const EditBook = () => {
     category: '',
     imageUrl: '',
     location: '',
+    managementNumber: '',
   });
 
   const [errors, setErrors] = useState({});
@@ -44,6 +45,7 @@ const EditBook = () => {
         category: book.category || '',
         imageUrl: book.imageUrl || '',
         location: book.location || '',
+        managementNumber: book.managementNumber || '',
       });
     }
   }, [book]);
@@ -159,6 +161,10 @@ const EditBook = () => {
     
     if (formData.pages && !formData.pages.match(/^\d+$/)) {
       newErrors.pages = 'ページ数は数字で入力してください';
+    }
+    
+    if (formData.managementNumber && isManagementNumberDuplicate(formData.managementNumber, id)) {
+      newErrors.managementNumber = 'この管理番号は既に使用されています';
     }
     
     return newErrors;
@@ -340,6 +346,18 @@ const EditBook = () => {
                 )}
               </div>
             )}
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">管理番号</label>
+            <input
+              type="text"
+              name="managementNumber"
+              value={formData.managementNumber}
+              onChange={handleChange}
+              placeholder="例：LIB-001、A-123"
+            />
+            {errors.managementNumber && <div className="error-message">{errors.managementNumber}</div>}
           </div>
 
           <div className="form-group">

@@ -9,7 +9,7 @@ import { Save, X, Search, Loader } from 'lucide-react';
 const AddBook = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { addBook } = useBooks();
+  const { addBook, isManagementNumberDuplicate } = useBooks();
   
   const [formData, setFormData] = useState({
     title: '',
@@ -22,6 +22,7 @@ const AddBook = () => {
     category: '',
     imageUrl: '',
     location: '',
+    managementNumber: '',
   });
 
   const [janCode, setJanCode] = useState('');
@@ -125,6 +126,10 @@ const AddBook = () => {
     
     if (formData.pages && !formData.pages.match(/^\d+$/)) {
       newErrors.pages = 'ページ数は数字で入力してください';
+    }
+    
+    if (formData.managementNumber && isManagementNumberDuplicate(formData.managementNumber)) {
+      newErrors.managementNumber = 'この管理番号は既に使用されています';
     }
     
     return newErrors;
@@ -322,6 +327,18 @@ const AddBook = () => {
                 )}
               </div>
             )}
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">管理番号</label>
+            <input
+              type="text"
+              name="managementNumber"
+              value={formData.managementNumber}
+              onChange={handleChange}
+              placeholder="例：LIB-001、A-123"
+            />
+            {errors.managementNumber && <div className="error-message">{errors.managementNumber}</div>}
           </div>
 
           <div className="form-group">

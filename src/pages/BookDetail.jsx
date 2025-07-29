@@ -111,6 +111,23 @@ const BookDetail = () => {
               </div>
             )}
 
+            {book.managementNumber && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Hash size={20} style={{ color: '#666' }} />
+                <span style={{ fontWeight: '500' }}>管理番号:</span>
+                <span style={{ 
+                  backgroundColor: '#f5f5f5', 
+                  color: '#333', 
+                  padding: '2px 8px', 
+                  borderRadius: '4px', 
+                  fontSize: '0.875rem',
+                  fontFamily: 'monospace'
+                }}>
+                  {book.managementNumber}
+                </span>
+              </div>
+            )}
+
             {book.isbn && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <Hash size={20} style={{ color: '#666' }} />
